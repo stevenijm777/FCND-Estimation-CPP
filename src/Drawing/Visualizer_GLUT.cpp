@@ -805,7 +805,10 @@ void Visualizer_GLUT::InitializeMenu(const vector<string>& strings)
     string trimmed = SLR::Trim(string(buf));
     tmp.push_back(string("Scenario.") + trimmed);
   }
-  fclose(f);
+  if (f)
+  {
+    fclose(f);
+  }
 
   f = fopen("../config/X_Scenarios.txt", "r");
   while (f && fgets(buf, 510, f))
