@@ -168,6 +168,18 @@ VectorXf QuadEstimatorEKF::PredictState(VectorXf curState, float dt, V3F accel, 
   Quaternion<float> attitude = Quaternion<float>::FromEuler123_RPY(rollEst, pitchEst, curState(6));
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+  // 1. Rotar la aceleracion del marco del cuerpo al marco inercial
+  V3F accel_inertial = attitude.Rotate_BtoI(accel);
+
+  // Predecir Posicion (x, y, z) usando la velocidad actual
+  predictedState(0) = curState(0) + curState(3) * dt;
+  predictedState(1) = curState(1) + curState(4) * dt;
+  predictedState(2) = curState(2) + curState(5) * dt;
+
+  // 3. Predecir Velocidad (vx, vy, vz) usando la aceleracion inercial 
+  predictedState(3) = curState(3) + accel_inertial.x * dt;
+  predictedState(4) = curState(4) + accel_inertial.y * dt;
+  predictedState(5) = curState(5) + accel_inertial.z * dt - 9.81f * dt;
 
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
@@ -195,7 +207,19 @@ MatrixXf QuadEstimatorEKF::GetRbgPrime(float roll, float pitch, float yaw)
   //   that your calculations are reasonable
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+  float theta = pitch;
+  float phi = roll;
+  float psi = yaw;
 
+  // Fila 0 
+  RbgPrime(0, 0) = -cos(theta) * sin(psi);
+  RbgPrime(0, 1) = -sin(phi) * sin(theta) * sin(psi) - cos(phi) * cos(phi);
+  RbgPrime(0, 2) = -cos(phi) * sin(theta) * sin(psi) * sin(phi) + sin(phi) * cos(psi);
+  
+  // Fila 1
+  RbgPrime(1, 0) = cos(theta) * cos(psi);
+  RbgPrime(1, 1) = sin(phi) * sin(theta) * cos(psi) - cos(phi) * sin(psi);
+  RbgPrime(1, 2) = cos(phi) * sin(theta) * cos(psi) + sin(phi) * sin(psi);
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
@@ -241,8 +265,26 @@ void QuadEstimatorEKF::Predict(float dt, V3F accel, V3F gyro)
   gPrime.setIdentity();
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+  gPrime(0, 3) = dt;
+  gPrime(1, 4) = dt;
+  gPrime(2, 5) = dt;
+
+  VectorXf accelVec(3);
+  accelVec(0) = accel.x;
+  accelVec(1) = accel.y;
+  accelVec(2) = accel.z; 
+
+  VectorXf jacobianCol = RbgPrime * accelVec * dt;
 
 
+      // RgbPrime * u_t(accel) * dt
+  gPrime(3, 6) = jacobianCol(0);
+  gPrime(4, 6) = jacobianCol(1);
+  gPrime(5, 6) = jacobianCol(2);
+
+  // \bar{\sum\limits_{t}}= G_{t} \sum\limits_{t-1} G_{t}^{T} + Q_t
+  // \bar{\sumt} = ekfCov 
+  ekfCov = gPrime * ekfCov * gPrime.transpose() + Q;
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
   ekfState = newState;
