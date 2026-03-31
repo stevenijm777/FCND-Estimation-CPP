@@ -213,8 +213,8 @@ MatrixXf QuadEstimatorEKF::GetRbgPrime(float roll, float pitch, float yaw)
 
   // Fila 0 
   RbgPrime(0, 0) = -cos(theta) * sin(psi);
-  RbgPrime(0, 1) = -sin(phi) * sin(theta) * sin(psi) - cos(phi) * cos(phi);
-  RbgPrime(0, 2) = -cos(phi) * sin(theta) * sin(psi) * sin(phi) + sin(phi) * cos(psi);
+  RbgPrime(0, 1) = -sin(phi) * sin(theta) * sin(psi) - cos(phi) * cos(psi);
+  RbgPrime(0, 2) = -cos(phi) * sin(theta) * sin(psi) + sin(phi) * cos(psi);
   
   // Fila 1
   RbgPrime(1, 0) = cos(theta) * cos(psi);
@@ -308,7 +308,12 @@ void QuadEstimatorEKF::UpdateFromGPS(V3F pos, V3F vel)
   //  - The GPS measurement covariance is available in member variable R_GPS
   //  - this is a very simple update
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
-
+  for (int i = 0; i < 6; i++) {
+      // Ponemos un 1 en la diagonal principal (posicion y velocidad)
+      hPrime(i, i) = 1.0f;
+      // la medicion predicha es simplemente nuestro estado estimado actual 
+      zFromX(i) = ekfState(i);
+  }
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
   Update(z, hPrime, R_GPS, zFromX);
