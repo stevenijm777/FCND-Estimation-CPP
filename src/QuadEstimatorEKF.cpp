@@ -339,14 +339,15 @@ void QuadEstimatorEKF::UpdateFromMag(float magYaw)
   // Nuestra prediccion es el Yaw estimado actual
   zFromX(0) = ekfState(6);
 
-  // Normalizar la medidion z(0)
-  // Si la diferencia es mayor a pi o menor a -pi ajusamos la lectura del sensor
-  if (magYaw - zFromX(0) > F_PI) {
-      z(0) -= 2.f * F_PI;
-  }
-  else if (z(0) - zFromX(0) < -F_PI) {
-      z(0) += 2.f * F_PI;
-  }
+  // Encontrar la diferencia entre la medición y la predicción (innovación)
+  float diff = magYaw - zFromX(0);
+
+  // Normalizar la diferencia al rango [-pi, pi] usando un bucle while
+  while (diff > F_PI) { diff -= 2.f * F_PI; }
+  while (diff < -F_PI) { diff += 2.f * F_PI; }
+
+  // Almacenar el z de tal manera que z - zFromX resulte en la innovación normalizada correcta.
+  z(0) = zFromX(0) + diff;
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
